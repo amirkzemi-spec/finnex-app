@@ -57,7 +57,7 @@ export default function Sidebar() {
         <NavItem href="/projects" label="Projects" />
         <NavItem href="/basket" label="Basket" />
         <NavItem href="/settings" label="Settings" />
-        <NavItem href="/coming-soon" label="Farmer onboarding" comingSoon />
+        <NavItem href="/farmer/apply" label="Farmer onboarding" />
       </nav>
 
       <div className="mt-8 rounded-2xl border border-gray-200 bg-gray-50 p-4">

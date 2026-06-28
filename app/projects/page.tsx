@@ -33,7 +33,7 @@ export default function ProjectsPage() {
           <div className="flex items-center gap-2">
             <Badge className="bg-gray-100 text-gray-700">Mock data</Badge>
             <Link
-              href="/coming-soon"
+              href="/farmer/apply"
               className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-900 hover:bg-gray-50"
             >
               Farmer onboarding

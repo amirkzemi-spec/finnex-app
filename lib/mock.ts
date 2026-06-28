@@ -78,6 +78,44 @@ export const projects: Project[] = [
 
     tags: ["Food security", "Smallholder", "Working capital"],
     created_at: "2026-01-20",
+
+    // Location & farm details
+    location: {
+      region: "Northern Region, Ghana",
+      lat: 9.4034,
+      lng: -0.8424,
+      nearest_market: "Tamale Central Market",
+    },
+    farm_stats: {
+      land_area_ha: 480,
+      farmer_count: 320,
+      avg_plot_size_ha: 1.5,
+      water_source: "Rain-fed + borehole irrigation",
+      soil_type: "Sandy loam",
+      elevation_m: 183,
+    },
+    photos: [
+      {
+        url: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&q=80",
+        caption: "Maize fields — Northern Ghana",
+        type: "field",
+      },
+      {
+        url: "https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=800&q=80",
+        caption: "Farmer cooperative meeting",
+        type: "farmers",
+      },
+      {
+        url: "https://images.unsplash.com/photo-1574943320219-553eb213f72d?w=800&q=80",
+        caption: "Input distribution — seeds & fertilizer",
+        type: "operations",
+      },
+      {
+        url: "https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800&q=80",
+        caption: "Field monitoring visit",
+        type: "monitoring",
+      },
+    ],
   },
 
   {
@@ -146,12 +184,47 @@ export const projects: Project[] = [
 
     tags: ["Export", "Value chain upgrade", "Traceability"],
     created_at: "2025-12-05",
+
+    // Location & farm details
+    location: {
+      region: "Murang'a County, Kenya",
+      lat: -0.7167,
+      lng: 37.1500,
+      nearest_market: "Murang'a Town Market",
+    },
+    farm_stats: {
+      land_area_ha: 310,
+      farmer_count: 210,
+      avg_plot_size_ha: 1.48,
+      water_source: "Drip irrigation + seasonal rainfall",
+      soil_type: "Red volcanic loam",
+      elevation_m: 1520,
+    },
+    photos: [
+      {
+        url: "https://images.unsplash.com/photo-1601493700631-2851526337da?w=800&q=80",
+        caption: "Avocado orchard — Murang'a County",
+        type: "field",
+      },
+      {
+        url: "https://images.unsplash.com/photo-1518568814500-bf0f8d125f46?w=800&q=80",
+        caption: "Harvest & grading operations",
+        type: "operations",
+      },
+      {
+        url: "https://images.unsplash.com/photo-1559827291-72ee739d0d9a?w=800&q=80",
+        caption: "Cold-chain storage facility",
+        type: "infrastructure",
+      },
+      {
+        url: "https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&q=80",
+        caption: "Export-grade packaging",
+        type: "operations",
+      },
+    ],
   },
 ];
 
-/**
- * Helper to get project by id
- */
 export function getProjectById(id: string) {
   return projects.find((p) => p.id === id);
 }
