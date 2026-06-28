@@ -84,8 +84,8 @@ function Select({ children, ...props }: React.SelectHTMLAttributes<HTMLSelectEle
   );
 }
 
-function Field({ children }: { children: React.ReactNode }) {
-  return <div className="flex flex-col gap-1">{children}</div>;
+function Field({ children, className }: { children: React.ReactNode; className?: string }) {
+  return <div className={`flex flex-col gap-1 ${className ?? ""}`}>{children}</div>;
 }
 
 function SectionTitle({ step, title, subtitle }: { step: number; title: string; subtitle: string }) {
