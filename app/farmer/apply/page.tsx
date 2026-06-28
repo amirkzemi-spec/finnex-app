@@ -495,9 +495,30 @@ export default function FarmerApplyPage() {
     if (err) { setError(err); return; }
     setSubmitting(true);
 
-    // Simulate submission — replace with real POST /api/farmer/apply
-    await new Promise((r) => setTimeout(r, 1200));
-    console.log("Farmer application submitted:", data);
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/farmer/apply`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...data,
+        land_area_ha: data.land_area_ha ? parseFloat(data.land_area_ha) : null,
+        gps_lat: data.gps_lat ? parseFloat(data.gps_lat) : null,
+        gps_lng: data.gps_lng ? parseFloat(data.gps_lng) : null,
+        capital_requested: data.capital_requested ? parseFloat(data.capital_requested) : null,
+        farmer_count: data.farmer_count ? parseInt(data.farmer_count) : null,
+        loan_duration_months: data.loan_duration_months ? parseInt(data.loan_duration_months) : null,
+        certifications: data.certifications ? [data.certifications] : [],
+      }),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      setError(err.detail || "Submission failed. Please try again.");
+      setSubmitting(false);
+      return;
+    }
+
+    
+    
+    
 
     setSubmitting(false);
     setSubmitted(true);
