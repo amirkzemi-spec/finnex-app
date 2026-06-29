@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 const API = "https://finnex-api-production.up.railway.app/api/projects";
 
@@ -54,6 +55,7 @@ function ProjectCard({ p }: { p: Project }) {
   const badge  = riskStyle(p.risk_band);
 
   return (
+    <Link href={`/dashboard/${p.id}`} style={{ textDecoration: "none" }}>
     <div className="fn-card">
       <div className="fn-card-header">
         <div>
@@ -83,6 +85,7 @@ function ProjectCard({ p }: { p: Project }) {
         })}
       </div>
     </div>
+    </Link>
   );
 }
 
