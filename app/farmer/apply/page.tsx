@@ -1,9 +1,6 @@
 "use client";
 
-// app/farmer/apply/page.tsx
-
 import React, { useState } from "react";
-import AppShell from "@/components/AppShell";
 
 // ── Types ──────────────────────────────────────────────
 type FormData = {
@@ -526,71 +523,84 @@ export default function FarmerApplyPage() {
   }
 
   return (
-    <AppShell>
-      <div className="mx-auto max-w-2xl">
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap');
+        .fn-apply-logo {
+          font-family: 'Playfair Display', serif;
+          font-size: 1.35rem;
+          font-weight: 700;
+          color: #15803d;
+          letter-spacing: 0.04em;
+        }
+      `}</style>
 
-        {/* Page header */}
-        {!submitted && (
-          <div className="mb-6">
-            <h1 className="text-xl font-semibold text-gray-900">Farmer Onboarding</h1>
-            <p className="mt-1 text-sm text-gray-600">
-              Apply to list your project on FINNEX. Takes about 5 minutes. Our team reviews every application.
-            </p>
-          </div>
-        )}
+      <div className="min-h-screen bg-gray-50">
+        <nav className="border-b border-gray-100 bg-white px-6 py-4">
+          <span className="fn-apply-logo">FINNEX.</span>
+        </nav>
 
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-          {submitted ? (
-            <SuccessScreen name={data.full_name} email={data.email} />
-          ) : (
-            <>
-              <ProgressBar step={step} />
-
-              {step === 1 && <Step1 data={data} set={set} />}
-              {step === 2 && <Step2 data={data} set={set} />}
-              {step === 3 && <Step3 data={data} set={set} />}
-              {step === 4 && <Step4 data={data} set={set} />}
-
-              {/* Error */}
-              {error && (
-                <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-600">
-                  {error}
-                </div>
-              )}
-
-              {/* Navigation */}
-              <div className="mt-6 flex items-center justify-between">
-                <button
-                  onClick={back}
-                  disabled={step === 1}
-                  className="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-30 transition"
-                >
-                  ← Back
-                </button>
-
-                <div className="text-xs text-gray-400">{step} / 4</div>
-
-                {step < 4 ? (
-                  <button
-                    onClick={next}
-                    className="rounded-xl bg-gray-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-800 transition"
-                  >
-                    Continue →
-                  </button>
-                ) : (
-                  <button
-                    onClick={submit}
-                    disabled={submitting}
-                    className="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-60 transition"
-                  >
-                    {submitting ? "Submitting…" : "Submit application"}
-                  </button>
-                )}
-              </div>
-            </>
+        <main className="mx-auto max-w-2xl p-6">
+          {!submitted && (
+            <div className="mb-6">
+              <h1 className="text-xl font-semibold text-gray-900">Farmer Onboarding</h1>
+              <p className="mt-1 text-sm text-gray-600">
+                Apply to list your project on FINNEX. Takes about 5 minutes. Our team reviews every application.
+              </p>
+            </div>
           )}
-        </div>
+
+          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+            {submitted ? (
+              <SuccessScreen name={data.full_name} email={data.email} />
+            ) : (
+              <>
+                <ProgressBar step={step} />
+
+                {step === 1 && <Step1 data={data} set={set} />}
+                {step === 2 && <Step2 data={data} set={set} />}
+                {step === 3 && <Step3 data={data} set={set} />}
+                {step === 4 && <Step4 data={data} set={set} />}
+
+                {error && (
+                  <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-600">
+                    {error}
+                  </div>
+                )}
+
+                <div className="mt-6 flex items-center justify-between">
+                  <button
+                    onClick={back}
+                    disabled={step === 1}
+                    className="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-30 transition"
+                  >
+                    ← Back
+                  </button>
+
+                  <div className="text-xs text-gray-400">{step} / 4</div>
+
+                  {step < 4 ? (
+                    <button
+                      onClick={next}
+                      className="rounded-xl bg-gray-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-800 transition"
+                    >
+                      Continue →
+                    </button>
+                  ) : (
+                    <button
+                      onClick={submit}
+                      disabled={submitting}
+                      className="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-60 transition"
+                    >
+                      {submitting ? "Submitting…" : "Submit application"}
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        </main>
       </div>
-    </AppShell>
+    </>
   );
 }

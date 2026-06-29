@@ -46,5 +46,6 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
+  // /farmer/apply is intentionally excluded — it must remain publicly accessible
   matcher: ["/dashboard/:path*", "/admin/:path*"],
 };
