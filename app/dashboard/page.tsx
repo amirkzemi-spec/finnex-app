@@ -103,11 +103,11 @@ export default function DashboardPage() {
 
   const fetchProjects = async (c: string, r: string, ct: string) => {
     setLoading(true);
-    const params = new URLSearchParams();
+    const params = new URLSearchParams({ status: "approved" });
     if (c)  params.set("country",   c);
     if (r)  params.set("risk_band", r);
     if (ct) params.set("crop_type", ct);
-    const url = params.toString() ? `${API}?${params}` : API;
+    const url = `${API}?${params}`;
     const res  = await fetch(url);
     const data: Project[] = await res.json();
     setProjects(data);
@@ -118,7 +118,7 @@ export default function DashboardPage() {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const res  = await fetch(API);
+      const res  = await fetch(`${API}?status=approved`);
       const data: Project[] = await res.json();
       setProjects(data);
       setCountries([...new Set(data.map(p => p.country).filter(Boolean) as string[])].sort());
