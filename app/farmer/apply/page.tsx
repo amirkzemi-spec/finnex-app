@@ -195,7 +195,6 @@ function Step2({ data, set }: { data: FormData; set: (k: keyof FormData, v: stri
             <option value="fairtrade">Fairtrade</option>
             <option value="globalgap">GlobalG.A.P.</option>
             <option value="rainforest">Rainforest Alliance</option>
-            <option value="multiple">Multiple certifications</option>
           </Select>
         </Field>
       </div>
