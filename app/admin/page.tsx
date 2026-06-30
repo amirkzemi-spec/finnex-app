@@ -19,7 +19,7 @@ type Project = {
   crop_type: string | null;
 };
 
-type StatusFilter = "all" | "submitted" | "approved" | "rejected";
+type StatusFilter = "all" | "pending" | "approved" | "rejected";
 
 function statusBadgeStyle(status: string): { background: string; color: string } {
   if (status === "approved") return { background: "rgba(74,222,128,0.15)", color: "#4ADE80" };
@@ -104,13 +104,12 @@ export default function AdminPage() {
 
   const visible = projects.filter(p => {
     if (filter === "all") return true;
-    if (filter === "submitted") return !p.status || p.status === "submitted";
     return p.status === filter;
   });
 
   const counts = {
-    all: projects.length,
-    submitted: projects.filter(p => !p.status || p.status === "submitted").length,
+    all:      projects.length,
+    pending:  projects.filter(p => p.status === "pending").length,
     approved: projects.filter(p => p.status === "approved").length,
     rejected: projects.filter(p => p.status === "rejected").length,
   };
@@ -511,13 +510,13 @@ export default function AdminPage() {
 
         {/* FILTER TABS */}
         <div className="adm-tabs">
-          {(["all", "submitted", "approved", "rejected"] as StatusFilter[]).map(f => (
+          {(["all", "pending", "approved", "rejected"] as StatusFilter[]).map(f => (
             <button
               key={f}
               className={`adm-tab${filter === f ? " active" : ""}`}
               onClick={() => setFilter(f)}
             >
-              {f === "submitted" ? "Pending" : f.charAt(0).toUpperCase() + f.slice(1)}
+              {f === "pending" ? "Pending" : f.charAt(0).toUpperCase() + f.slice(1)}
               <span className="adm-tab-count">{counts[f]}</span>
             </button>
           ))}
