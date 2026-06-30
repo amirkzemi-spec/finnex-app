@@ -92,6 +92,7 @@ function ProjectCard({ p }: { p: Project }) {
 export default function DashboardPage() {
   const [projects, setProjects]     = useState<Project[]>([]);
   const [loading, setLoading]       = useState(true);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
   const [country, setCountry]       = useState("");
   const [riskBand, setRiskBand]     = useState("");
   const [cropType, setCropType]     = useState("");
@@ -384,11 +385,45 @@ export default function DashboardPage() {
         }
         @keyframes fn-spin { to { transform: rotate(360deg); } }
 
+        /* DEMO BANNER */
+        .fn-demo-banner {
+          display: flex;
+          align-items: flex-start;
+          gap: 12px;
+          margin: 16px 40px 0;
+          padding: 10px 14px;
+          background: rgba(245,158,11,0.08);
+          border-left: 3px solid #F59E0B;
+          border-radius: 0 8px 8px 0;
+        }
+        .fn-demo-banner-text {
+          flex: 1;
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 0.65rem;
+          letter-spacing: 0.04em;
+          color: #F59E0B;
+          line-height: 1.5;
+        }
+        .fn-demo-banner-close {
+          background: none;
+          border: none;
+          color: #F59E0B;
+          cursor: pointer;
+          font-size: 0.85rem;
+          line-height: 1;
+          opacity: 0.6;
+          padding: 0;
+          flex-shrink: 0;
+          transition: opacity 0.15s;
+        }
+        .fn-demo-banner-close:hover { opacity: 1; }
+
         @media (max-width: 600px) {
           .fn-nav, .fn-page-header, .fn-filters, .fn-count, .fn-grid {
             padding-left: 20px;
             padding-right: 20px;
           }
+          .fn-demo-banner { margin-left: 20px; margin-right: 20px; }
           .fn-page-title { font-size: 1.5rem; }
           .fn-score-number { font-size: 2rem; }
         }
@@ -399,6 +434,15 @@ export default function DashboardPage() {
           <span className="fn-logo">FINNEX.</span>
           <span className="fn-nav-label">Investor Dashboard</span>
         </nav>
+
+        {!bannerDismissed && (
+          <div className="fn-demo-banner">
+            <span className="fn-demo-banner-text">
+              DEMO DATA — This pipeline currently includes synthetic test projects for demonstration. Production data begins once farmer onboarding launches.
+            </span>
+            <button className="fn-demo-banner-close" onClick={() => setBannerDismissed(true)} aria-label="Dismiss">×</button>
+          </div>
+        )}
 
         <div className="fn-page-header">
           <h1 className="fn-page-title">

@@ -41,6 +41,7 @@ export default function AdminPage() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteLoading, setInviteLoading] = useState(false);
   const [inviteMsg, setInviteMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -440,11 +441,45 @@ export default function AdminPage() {
           margin-bottom: 20px;
         }
 
+        /* DEMO BANNER */
+        .adm-demo-banner {
+          display: flex;
+          align-items: flex-start;
+          gap: 12px;
+          margin: 16px 40px 0;
+          padding: 10px 14px;
+          background: rgba(245,158,11,0.08);
+          border-left: 3px solid #F59E0B;
+          border-radius: 0 8px 8px 0;
+        }
+        .adm-demo-banner-text {
+          flex: 1;
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 0.65rem;
+          letter-spacing: 0.04em;
+          color: #F59E0B;
+          line-height: 1.5;
+        }
+        .adm-demo-banner-close {
+          background: none;
+          border: none;
+          color: #F59E0B;
+          cursor: pointer;
+          font-size: 0.85rem;
+          line-height: 1;
+          opacity: 0.6;
+          padding: 0;
+          flex-shrink: 0;
+          transition: opacity 0.15s;
+        }
+        .adm-demo-banner-close:hover { opacity: 1; }
+
         @media (max-width: 640px) {
-          .adm-nav, .adm-header, .adm-tabs, .adm-list, .adm-invite-section, .adm-divider {
+          .adm-nav, .adm-header, .adm-tabs, .adm-list, .adm-invite-section, .adm-divider, .adm-demo-banner {
             padding-left: 20px;
             padding-right: 20px;
           }
+          .adm-demo-banner { margin-left: 20px; margin-right: 20px; }
           .adm-row { grid-template-columns: 1fr; }
           .adm-row-actions { justify-content: flex-end; }
           .adm-invite-row { flex-direction: column; }
@@ -459,6 +494,15 @@ export default function AdminPage() {
             <button className="adm-signout" onClick={handleSignOut}>Sign out</button>
           </div>
         </nav>
+
+        {!bannerDismissed && (
+          <div className="adm-demo-banner">
+            <span className="adm-demo-banner-text">
+              DEMO DATA — Some projects in this pipeline are synthetic test entries generated for demonstration purposes, not real farmer submissions.
+            </span>
+            <button className="adm-demo-banner-close" onClick={() => setBannerDismissed(true)} aria-label="Dismiss">×</button>
+          </div>
+        )}
 
         <div className="adm-header">
           <h1 className="adm-title">Project <em>Review</em></h1>
