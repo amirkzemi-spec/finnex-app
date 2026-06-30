@@ -168,6 +168,24 @@ REGIONS = {
 
 COUNTRIES = list(REGIONS.keys())
 
+# The 12 farmer-provided fields used by the scorer's completeness check.
+# Matches EXACTLY the scored_fields list in finnex_scorer/scorer.py:_data_completeness().
+# Omitting any of these from the payload simulates a farmer skipping that question.
+SCORED_PAYLOAD_KEYS = [
+    "experience_years",
+    "water_source",
+    "soil_type",
+    "is_cooperative",
+    "certifications",
+    "buyer_type",
+    "has_offtake_contract",
+    "pricing_model",
+    "repayment_plan",
+    "has_previous_loans",
+    "monitoring_method",
+    "monitoring_frequency",
+]
+
 # Buyer type by crop: export crops (coffee/tea/cocoa) access processors and exporters;
 # staple crops (cassava/maize/yam/rice) mostly sold locally or through aggregators.
 CROP_BUYER_PROFILES = {
@@ -237,10 +255,17 @@ def generate_farmer(country):
     is_cooperative = random.random() < 0.55
     farmer_count = random.randint(12, 95) if is_cooperative else None
 
-    # Certifications: export crops have higher cert rates (~35%); staple crops lower (~12%)
+    # Certifications: export crops have higher cert rates; staple crops lower.
+    # Cooperatives substantially increase cert probability because the audit
+    # and compliance cost is shared across members — group certification
+    # (e.g. Fairtrade group schemes, organic group audits) is the dominant
+    # model in SSA and is only viable at cooperative scale.
     crop_certs = CROP_CERT_PROFILES.get(crop, ["organic"])
     is_export_crop = crop.lower() in {"coffee", "tea", "cocoa"}
-    cert_probability = 0.35 if is_export_crop else 0.12
+    if is_cooperative:
+        cert_probability = 0.55 if is_export_crop else 0.25  # shared audit cost
+    else:
+        cert_probability = 0.35 if is_export_crop else 0.12  # individual cost barrier
     if random.random() < cert_probability:
         # pick 1–2 certs from the crop-appropriate pool
         n_certs = random.randint(1, min(2, len(crop_certs)))
@@ -249,20 +274,66 @@ def generate_farmer(country):
         certifications = []
 
     # ── Agronomy ──────────────────────────────────────────────────────────────
-    water_source = random.choice(cfg["water_weights"])
+    # Cooperatives pool capital for shared water infrastructure (boreholes,
+    # canal systems, drip kits), so irrigation penetration is meaningfully
+    # higher than for isolated smallholders in the same region.  We keep the
+    # region's base list but double the draw-weight of every managed-water
+    # entry so rain_fed becomes relatively less dominant.
+    _RAIN_SOURCES = {"rain_fed", "rain", "rainwater"}
+    _MANAGED_WATER = {"irrigation", "drip_irrigation", "borehole", "river", "hybrid"}
+    base_water = cfg["water_weights"]
+    if is_cooperative:
+        # Each managed-water source appears twice; rain sources appear once.
+        water_pool = []
+        for w in base_water:
+            water_pool.append(w)
+            if w in _MANAGED_WATER:
+                water_pool.append(w)  # extra copy doubles its relative odds
+    else:
+        water_pool = base_water
+    water_source = random.choice(water_pool)
     soil_type = random.choice(cfg["soil_weights"])
 
     # ── Market ────────────────────────────────────────────────────────────────
-    buyer_type = random.choice(CROP_BUYER_PROFILES.get(crop, ["local_market"]))
-
-    # Offtake: export/processor buyers more likely to have contracts;
-    # local/informal markets rarely do
-    if buyer_type in ("export", "processor"):
-        offtake = random.choices(["signed", "mou", "verbal", "none"], weights=[40, 25, 20, 15])[0]
-    elif buyer_type in ("cooperative", "aggregator"):
-        offtake = random.choices(["signed", "mou", "verbal", "none"], weights=[20, 20, 25, 35])[0]
+    # Cooperatives achieve the volume and consistency needed for export,
+    # processor, and aggregator relationships through collective bargaining —
+    # a single smallholder rarely has enough throughput to attract these buyers.
+    # We double the draw-weight of "higher-tier" buyers for cooperative members
+    # while keeping local_market/direct_consumer at base weight.
+    _HIGH_TIER_BUYERS = {"export", "processor", "aggregator", "government"}
+    base_buyers = CROP_BUYER_PROFILES.get(crop, ["local_market"])
+    if is_cooperative:
+        buyer_pool = []
+        for b in base_buyers:
+            buyer_pool.append(b)
+            if b in _HIGH_TIER_BUYERS:
+                buyer_pool.append(b)  # extra copy doubles its relative odds
     else:
-        offtake = random.choices(["verbal", "none", "none"], weights=[25, 60, 15])[0]
+        buyer_pool = base_buyers
+    buyer_type = random.choice(buyer_pool)
+
+    # Offtake: buyer tier is the primary driver (buyers who need supply
+    # continuity push for formal contracts).  Cooperative membership adds a
+    # direct boost on top — cooperatives have the organisational capacity to
+    # negotiate, draft, and honour formal agreements, and lenders/buyers
+    # prefer contracting a single legal entity (the coop) over hundreds of
+    # individual smallholders.  The +15 pp shift toward "signed" reflects
+    # this organisational advantage within each buyer-tier.
+    if buyer_type in ("export", "processor"):
+        if is_cooperative:
+            offtake = random.choices(["signed", "mou", "verbal", "none"], weights=[55, 25, 15, 5])[0]
+        else:
+            offtake = random.choices(["signed", "mou", "verbal", "none"], weights=[40, 25, 20, 15])[0]
+    elif buyer_type in ("cooperative", "aggregator"):
+        if is_cooperative:
+            offtake = random.choices(["signed", "mou", "verbal", "none"], weights=[35, 25, 25, 15])[0]
+        else:
+            offtake = random.choices(["signed", "mou", "verbal", "none"], weights=[20, 20, 25, 35])[0]
+    else:
+        if is_cooperative:
+            offtake = random.choices(["signed", "verbal", "none"], weights=[20, 45, 35])[0]
+        else:
+            offtake = random.choices(["verbal", "none", "none"], weights=[25, 60, 15])[0]
 
     # Pricing: fixed/index-linked for export; spot for local/informal
     if buyer_type in ("export", "processor"):
@@ -362,7 +433,7 @@ def generate_farmer(country):
         # Operator
         "full_name":        full_name,
         "experience_years": str(experience_years),  # stored in DB; not scored (router bug)
-        "is_cooperative":   is_cooperative,
+        "is_cooperative":   "yes" if is_cooperative else "no",
         "farmer_count":     farmer_count,
         "certifications":   certifications,
         # Agronomy
@@ -396,7 +467,18 @@ def main():
     parser.add_argument("--api-url", type=str, required=True, help="Base URL of finnex-api")
     parser.add_argument("--dry-run", action="store_true", help="Print payloads without submitting")
     parser.add_argument("--delay", type=float, default=0.3, help="Seconds between requests")
+    parser.add_argument(
+        "--incomplete-rate", type=float, default=0.0, metavar="RATE",
+        help=(
+            "Fraction of farmers (0.0–1.0) that will have 2–4 randomly omitted "
+            "scored fields, simulating real farmers who skipped form questions. "
+            "E.g. --incomplete-rate 0.3 makes ~30%% of submissions partial."
+        ),
+    )
     args = parser.parse_args()
+
+    if not 0.0 <= args.incomplete_rate <= 1.0:
+        parser.error("--incomplete-rate must be between 0.0 and 1.0")
 
     endpoint = f"{args.api_url.rstrip('/')}/api/farmer/apply"
 
@@ -407,31 +489,49 @@ def main():
         country = random.choice(COUNTRIES)
         payload = generate_farmer(country)
 
+        # Apply incomplete-rate: drop 2–4 randomly chosen scored fields.
+        omitted = []
+        if args.incomplete_rate > 0 and random.random() < args.incomplete_rate:
+            n_omit = random.randint(2, 4)
+            omit_keys = random.sample(SCORED_PAYLOAD_KEYS, n_omit)
+            for k in omit_keys:
+                payload.pop(k, None)
+            omitted = omit_keys
+
         if args.dry_run:
-            certs = ", ".join(payload["certifications"]) or "none"
+            certs = ", ".join(payload.get("certifications", [])) or "none"
+            tag = f"  [omits: {', '.join(omitted)}]" if omitted else ""
             print(
-                f"[{i+1}/{args.count}] {payload['full_name']:25s} {country:10s} "
-                f"{payload['crop_type']:8s} buyer={payload['buyer_type']:14s} "
-                f"offtake={payload['has_offtake_contract']:6s} soil={payload['soil_type']:9s} "
-                f"monitor={payload['monitoring_method']:10s} certs=[{certs}]"
+                f"[{i+1}/{args.count}] {payload.get('full_name', '?'):25s} {country:10s} "
+                f"{payload.get('crop_type', '?'):8s} buyer={payload.get('buyer_type', '-'):14s} "
+                f"offtake={payload.get('has_offtake_contract', '-'):6s} "
+                f"soil={payload.get('soil_type', '-'):9s} "
+                f"monitor={payload.get('monitoring_method', '-'):10s} certs=[{certs}]{tag}"
             )
             continue
 
         try:
             resp = requests.post(endpoint, json=payload, timeout=15)
             if resp.status_code in (200, 201):
-                data = resp.json()
-                score = data.get("overall_score", "?")
-                band = data.get("risk_band", "?")
-                print(f"[{i+1}/{args.count}] OK  {payload['full_name']:25s} {country:10s} "
-                      f"score={score} band={band}")
+                data     = resp.json()
+                score    = data.get("overall_score", "?")
+                band     = data.get("risk_band", "?")
+                pct      = data.get("data_completeness_pct")
+                pct_str  = f"  completeness={int(pct)}%" if pct is not None else ""
+                omit_str = f"  [omits: {', '.join(omitted)}]" if omitted else ""
+                print(
+                    f"[{i+1}/{args.count}] OK  {payload.get('full_name', '?'):25s} "
+                    f"{country:10s} score={score:<5} band={band}{pct_str}{omit_str}"
+                )
                 success += 1
             else:
-                print(f"[{i+1}/{args.count}] FAIL ({resp.status_code}) {payload['full_name']} "
-                      f"— {resp.text[:200]}")
+                print(
+                    f"[{i+1}/{args.count}] FAIL ({resp.status_code}) "
+                    f"{payload.get('full_name', '?')} — {resp.text[:200]}"
+                )
                 failed += 1
         except Exception as e:
-            print(f"[{i+1}/{args.count}] ERROR {payload['full_name']} — {e}")
+            print(f"[{i+1}/{args.count}] ERROR {payload.get('full_name', '?')} — {e}")
             failed += 1
 
         time.sleep(args.delay)
