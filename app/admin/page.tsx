@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 
-const API = "https://finnex-api-production.up.railway.app/api/projects";
+const API_BASE = "https://finnex-api-production.up.railway.app/api";
+const API = `${API_BASE}/projects`;
 
 type Project = {
   id: string;
@@ -64,18 +65,20 @@ export default function AdminPage() {
 
   const updateStatus = async (id: string, newStatus: "approved" | "rejected") => {
     setActionLoading(id + newStatus);
-    const supabase = createClient();
-    const { error } = await supabase
-      .from("farmer_applications")
-      .update({ status: newStatus })
-      .eq("id", id);
-
-    if (!error) {
-      setProjects(prev =>
-        prev.map(p => (p.id === id ? { ...p, status: newStatus } : p))
-      );
+    try {
+      const res = await fetch(`${API_BASE}/projects/${id}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (res.ok) {
+        setProjects(prev =>
+          prev.map(p => (p.id === id ? { ...p, status: newStatus } : p))
+        );
+      }
+    } finally {
+      setActionLoading(null);
     }
-    setActionLoading(null);
   };
 
   const handleInvite = async (e: React.FormEvent) => {
