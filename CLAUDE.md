@@ -59,3 +59,37 @@
 3. Approved project appears on investor dashboard
 4. Admin sends invite link to investor email
 5. Investor clicks link → sets password → logs in → sees approved projects only
+
+---
+
+## Session 4 — Critical scoring engine bug fixes (today)
+
+### What was discovered
+While building a synthetic farmer data generator for demo purposes, a full field-by-field audit between the farmer onboarding form (finnex-app) and the scoring engine (finnex-api) revealed that the form and scorer had never been validated against each other. Real farmers have likely been receiving silently incorrect scores since Phase 1 launch.
+
+### Root cause
+The form sends human-readable string values (e.g. "yes_signed", "exporter", "5-10") but the scorer's lookup tables expected different string keys (e.g. "signed", "export", an integer). Any mismatch silently fell back to DEFAULT_MISSING_SCORE = 40 — treating real farmer answers as if they were never provided, with no error or warning.
+
+### Bugs fixed (finnex-api)
+1. experience_years crash — int("5-10") would throw a 500 error on any real submission. Now parses range strings to an integer midpoint.
+2. has_offtake_contract — form values ("yes_signed", "yes_verbal", "in_negotiation", "no") now correctly map to scorer keys ("signed", "verbal", "mou", "none"). Affects Market dimension (weight 0.25).
+3. has_previous_loans / loan_history — form values now map correctly; added "yes_ongoing" → neutral score instead of falling to default. Affects Finance dimension (weight 0.20).
+4. buyer_type — "exporter" now maps to "export"; added "government" and "ngo" as legitimate scorer keys instead of defaulting to missing.
+5. water_source — "rain" now maps to "rain_fed"; added "hybrid" as a scorer key.
+6. repayment_plan — "post_harvest" now maps to "lump_sum".
+7. pricing_model — added "floor" and "revenue_share" as scorer keys.
+8. soil_type — added "volcanic" as a scorer key; "unknown" now explicitly scores as missing (honest, not penalised as error).
+9. is_cooperative — fixed Optional[bool] coercion bug where "informal" caused a 422 validation error. Schema changed to Optional[str]; router normalises "yes"/"informal"/"no" to bool for the scorer.
+10. status filter — was completely unwired; ?status=pending/approved/rejected was ignored and the endpoint always returned all rows. Now fixed. This likely caused the admin panel's tab counts to be wrong.
+
+### Impact
+A real farmer with a signed offtake contract, good loan repayment history, and an export buyer relationship was previously losing approximately 15–20 overall score points purely due to string mismatches — potentially being misclassified into a worse risk band than their actual profile warranted.
+
+### Action needed
+Any real (non-test) farmer submissions made before this fix should be considered to have unreliable scores and may need manual review or rescoring once a rescore utility exists.
+
+### Demo data
+A synthetic farmer generator was built at finnex-app/scripts/generate_farmers.py — generates fictional but regionally realistic farmer profiles (grounded in FAO/AGRA/IAEA public research, documented in script docstring) and submits them to the real API for scoring. Cooperative membership now correlates with stronger profiles across water_source, certifications, buyer_type, and offtake_contract odds, reflecting real-world patterns (collective bargaining, shared infrastructure costs). Current demo dataset: 75 synthetic farmers, distribution ~3% Low / 60% Medium / 37% High risk band, mean score 68.5.
+
+### Open product question
+How should the scoring engine handle genuinely missing data from real farmers (e.g. a farmer who doesn't know their "pricing model")? Currently most missing fields silently default to 40 (penalised as if risky). Three options considered: (1) make all scored fields required in the form, (2) neutral default + show data-completeness percentage to investors, (3) confidence/completeness score alongside risk score. Leaning toward option 3 for institutional credibility — not yet implemented.
