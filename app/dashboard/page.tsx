@@ -17,6 +17,7 @@ type Project = {
   score_finance: number;
   score_monitoring: number;
   score_impact: number;
+  data_completeness_pct: number | null;
   full_name: string | null;
   project_name: string | null;
   country: string | null;
@@ -71,6 +72,10 @@ function ProjectCard({ p }: { p: Project }) {
         <span className="fn-score-number">{p.overall_score?.toFixed(1)}</span>
         <span className="fn-score-label">/ 100</span>
       </div>
+
+      {p.data_completeness_pct != null && (
+        <div className="fn-completeness">{p.data_completeness_pct}% data complete</div>
+      )}
 
       <div className="fn-dims">
         {DIMENSIONS.map(({ key, label }) => {
@@ -306,6 +311,16 @@ export default function DashboardPage() {
           text-transform: uppercase;
           padding: 4px 10px;
           border-radius: 6px;
+        }
+
+        /* COMPLETENESS */
+        .fn-completeness {
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 0.62rem;
+          letter-spacing: 0.06em;
+          color: #7A9E87;
+          margin-top: -12px;
+          margin-bottom: 16px;
         }
 
         /* SCORE */

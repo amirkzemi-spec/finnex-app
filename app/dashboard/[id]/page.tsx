@@ -18,6 +18,7 @@ type Project = {
   score_finance: number;
   score_monitoring: number;
   score_impact: number;
+  data_completeness_pct: number | null;
   full_name: string | null;
   project_name: string | null;
   country: string | null;
@@ -71,6 +72,7 @@ const SCORE_KEYS = new Set([
   "score_finance",
   "score_monitoring",
   "score_impact",
+  "data_completeness_pct",  // shown near overall score, not in raw metadata
 ]);
 
 function riskStyle(band: string): { background: string; color: string } {
@@ -256,6 +258,13 @@ export default function ProjectDetailPage() {
           font-size: 0.85rem;
           color: #B8D4C0;
           opacity: 0.4;
+        }
+        .dp-completeness {
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 0.72rem;
+          letter-spacing: 0.06em;
+          color: #7A9E87;
+          margin-top: 10px;
         }
 
         /* CONTENT AREA */
@@ -456,6 +465,11 @@ export default function ProjectDetailPage() {
                 <span className="dp-overall-score">{project.overall_score?.toFixed(1)}</span>
                 <span className="dp-overall-label">/ 100 overall</span>
               </div>
+              {project.data_completeness_pct != null && (
+                <div className="dp-completeness">
+                  Based on {project.data_completeness_pct}% of scoring inputs
+                </div>
+              )}
             </div>
 
             <div className="dp-body">
