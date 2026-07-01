@@ -450,10 +450,10 @@ function SuccessScreen({ name, email }: { name: string; email: string }) {
         </div>
       </div>
       <a
-        href="/dashboard"
+        href="https://finnex.capital"
         className="mt-4 inline-flex rounded-xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-medium text-gray-900 hover:bg-gray-50 transition"
       >
-        Browse current projects
+        Back to FINNEX
       </a>
     </div>
   );
