@@ -1,3 +1,5 @@
+Canonical strategy documentation (target market, roadmap, open product questions) lives in `finnex-api/STRATEGY.md`.
+
 ---
 
 ## Phase 2 — Investor Dashboard (today)
@@ -9,6 +11,9 @@
 - Accepts optional query params: country, risk_band, crop_type
 - Returns all fields from farmer_applications ordered by overall_score DESC
 - Router registered in main.py under /api prefix
+- Farmer confirmation email via Resend (email_service.py): fired as a FastAPI background task after DB insert in POST /api/farmer/apply, receipt-only copy (no score/risk_band), failures logged and never affect the response — confirmed working end-to-end via live delivery
+- Fixed a real logging gap found while debugging the email feature: main.py had no `logging.basicConfig()`, so `logger.info`/`logger.exception` calls anywhere in the app (not just email_service.py) were silently swallowed instead of reaching Railway's logs — added `logging.basicConfig(level=logging.INFO)` in main.py
+- Corrected scripts/generate_farmers.py's target market to match the pitch deck's 5 countries — Kenya, Uganda, Tanzania, Ethiopia, Rwanda — replacing Nigeria and Ghana (which were never part of the actual target market). Ethiopia/Rwanda got their own FAO-grounded regional profiles (farm size, soil, crop mix, irrigation) rather than reused Nigeria/Ghana logic; Ethiopia introduced two new crop types (Teff, Wheat) with their own buyer/cert/labor profiles
 
 **finnex-app**
 - app/dashboard/page.tsx — live investor dashboard
@@ -170,8 +175,10 @@ Whenever a write operation appears to succeed in the UI, verify with a fresh ser
 - app.finnex.capital/admin — admin review panel (admin role required)
 - finnex-api-production.up.railway.app — API (internal, not for public use)
 
+### Documentation
+- Formalized STRATEGY.md into finnex-api (previously existed only as an external planning file, never under version control). Updated with corrected target market section (Kenya, Uganda, Tanzania, Ethiopia, Rwanda; 2026 pilot = Kenya & Uganda only) and resolved the "confirmation emails" open question. Added pointers from finnex-app and finnex-landing CLAUDE.md/README to the canonical location.
+
 ### Remaining todos
-- Farmer confirmation email (currently says "confirmation will be sent" but email not wired up)
 - Supabase email confirmation setting — verify it's enabled so investor invite links are properly gated
 - Sidebar.tsx, basket, coming-soon pages still link to /projects — harmless (now redirects to /dashboard) but worth cleaning up
 - app.finnex.capital has only been tested while logged in with your admin session — test in incognito to verify public farmer flow works cleanly
