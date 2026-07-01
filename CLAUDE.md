@@ -126,3 +126,52 @@ Whenever a write operation appears to succeed in the UI, verify with a fresh ser
 - 7 projects genuinely approved and live on /dashboard, all with realistic synthetic profiles, scores 79–83, mix of Low/Medium risk bands, completeness 92–100%
 - 83 projects remain pending in /admin for future review
 - Approve/Reject now verified working end-to-end through a real browser refresh test
+
+---
+
+## Session 5 — Domain, routing, and UX fixes (today)
+
+### app.finnex.capital custom domain
+- finnex-app now accessible at app.finnex.capital (CNAME app → 2fqkp3hm.up.railway.app in Hostinger DNS)
+- Root route app.finnex.capital / now redirects to /dashboard (middleware handles auth gate from there)
+- Old MVP placeholder page (app/page.tsx) replaced with a Next.js redirect — no more stale mock data at root
+
+### CORS fix
+- app.finnex.capital was not in finnex-api's CORS allowed origins list
+- Admin panel was showing "ALL 0 / PENDING 0 / APPROVED 0" because API calls were being blocked by CORS
+- Fixed: added "https://app.finnex.capital" to allow_origins in main.py (commit 4afe258)
+
+### Farmer form fixes
+- "Browse current projects" button on success screen was linking to /projects (old MVP mock data page)
+- Changed to "Back to FINNEX" linking to https://finnex.capital — farmers aren't authenticated so /dashboard would bounce them to /login
+- app/projects/page.tsx and app/projects/[id]/page.tsx were old MVP placeholder pages with hardcoded mock data — replaced with redirects to /dashboard
+
+### Landing page fix
+- "Submit your project" links on finnex.capital were still pointing to the Railway URL (finnex-app-production.up.railway.app/farmer/apply)
+- Updated to https://app.finnex.capital/farmer/apply (commit bb07182)
+
+### Admin panel tab bug (status string mismatch)
+- Admin tabs showed "PENDING 0" even with 90 pending projects visible in the list
+- Root cause: tab filter was checking p.status === "submitted" but DB stores "pending"
+- Fixed: all three places (StatusFilter type, count logic, visible filter predicate) updated to use "pending"
+
+### Real submission test
+- Submitted a real test form as "farmer 3 / Farmer 2" (Tanzania, Cassava)
+- Result: 69.2 / Medium risk, "Based on 83% of scoring inputs" — completeness feature confirmed working on a real partial submission
+- D5 Monitoring scored 50 (neutral default) for a blank field — confirmed fair treatment of missing data
+- Full loop confirmed: farmer submits → scores computed → appears in /admin → detail page shows breakdown with completeness disclosure
+
+### Key URLs (final state)
+- finnex.capital — public landing page
+- app.finnex.capital — platform (farmer form, investor dashboard, admin)
+- app.finnex.capital/farmer/apply — farmer submission form (public, no auth)
+- app.finnex.capital/login — investor login (invite-only)
+- app.finnex.capital/dashboard — investor project pipeline (auth required)
+- app.finnex.capital/admin — admin review panel (admin role required)
+- finnex-api-production.up.railway.app — API (internal, not for public use)
+
+### Remaining todos
+- Farmer confirmation email (currently says "confirmation will be sent" but email not wired up)
+- Supabase email confirmation setting — verify it's enabled so investor invite links are properly gated
+- Sidebar.tsx, basket, coming-soon pages still link to /projects — harmless (now redirects to /dashboard) but worth cleaning up
+- app.finnex.capital has only been tested while logged in with your admin session — test in incognito to verify public farmer flow works cleanly
