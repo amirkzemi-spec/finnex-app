@@ -18,6 +18,7 @@ type Project = {
   project_name: string | null;
   country: string | null;
   crop_type: string | null;
+  source: string;
 };
 
 type StatusFilter = "all" | "pending" | "approved" | "rejected";
@@ -31,6 +32,15 @@ function statusBadgeStyle(status: string): { background: string; color: string }
 function statusLabel(status: string): string {
   if (status === "submitted") return "Pending";
   return status.charAt(0).toUpperCase() + status.slice(1);
+}
+
+function sourceBadgeStyle(source: string): { background: string; color: string } {
+  if (source === "synthetic") return { background: "rgba(245,158,11,0.12)", color: "#F59E0B" };
+  return { background: "rgba(74,222,128,0.12)", color: "#4ADE80" };
+}
+
+function sourceLabel(source: string): string {
+  return source === "synthetic" ? "Synthetic" : "Real";
 }
 
 export default function AdminPage() {
@@ -550,6 +560,9 @@ export default function AdminPage() {
                       )}
                       <span className="adm-row-badge" style={badge}>
                         {statusLabel(p.status || "submitted")}
+                      </span>
+                      <span className="adm-row-badge" style={sourceBadgeStyle(p.source)}>
+                        {sourceLabel(p.source)}
                       </span>
                     </div>
                   </div>
