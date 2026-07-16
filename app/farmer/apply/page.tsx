@@ -21,10 +21,23 @@ type FormData = {
 };
 
 const empty: FormData = {
-  project_name: "", phone_number: "", email: "", country: "", region: "", crop_type: "",
+  project_name: "", phone_number: "", email: "", country: "Kenya", region: "", crop_type: "",
   land_area_ha: "", experience_years: "", has_offtake_contract: "",
   capital_requested: "", capital_need: "",
 };
+
+// Value differs from label for "Horticulture" so it matches finnex-api's
+// existing MODERATE_CROPS scorer bucket ("vegetables") instead of falling
+// into the generic unrecognised-crop fallback.
+const CROP_OPTIONS = [
+  { label: "Tea", value: "tea" },
+  { label: "Coffee", value: "coffee" },
+  { label: "Dairy", value: "dairy" },
+  { label: "Macadamia", value: "macadamia" },
+  { label: "Horticulture", value: "vegetables" },
+  { label: "Sugarcane", value: "sugarcane" },
+  { label: "Other", value: "other" },
+];
 
 // ── Small reusable field components ───────────────────
 function Label({ children, required }: { children: React.ReactNode; required?: boolean }) {
@@ -93,10 +106,10 @@ function Step1({ data, set }: { data: FormData; set: (k: keyof FormData, v: stri
         <Field>
           <Label required>Country</Label>
           <Select value={data.country} onChange={e => set("country", e.target.value)}>
-            <option value="">Select country</option>
-            {["Ghana", "Kenya", "Nigeria", "Ethiopia", "Tanzania", "Uganda", "Rwanda", "Senegal", "Côte d'Ivoire", "Zambia", "Mozambique", "Other"].map(c => (
+            {["Kenya", "Uganda", "Tanzania", "Ethiopia", "Rwanda"].map(c => (
               <option key={c} value={c}>{c}</option>
             ))}
+            <option value="Other">Other (outside current markets)</option>
           </Select>
         </Field>
         <Field>
@@ -107,8 +120,8 @@ function Step1({ data, set }: { data: FormData; set: (k: keyof FormData, v: stri
           <Label required>Primary crop</Label>
           <Select value={data.crop_type} onChange={e => set("crop_type", e.target.value)}>
             <option value="">Select crop</option>
-            {["Maize", "Rice", "Cassava", "Soybean", "Avocado", "Cocoa", "Coffee", "Tomato", "Onion", "Groundnut", "Other"].map(c => (
-              <option key={c} value={c}>{c}</option>
+            {CROP_OPTIONS.map(({ label, value }) => (
+              <option key={value} value={value}>{label}</option>
             ))}
           </Select>
         </Field>
@@ -170,7 +183,6 @@ function validate(step: number, data: FormData): string | null {
     if (!data.project_name.trim()) return "Please enter a cooperative/farmer name.";
     if (!data.phone_number.trim()) return "Please enter a phone number.";
     if (data.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) return "Please enter a valid email.";
-    if (!data.country) return "Please select a country.";
     if (!data.region.trim()) return "Please enter your county/region.";
     if (!data.crop_type) return "Please select a crop type.";
   }
