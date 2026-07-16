@@ -107,7 +107,7 @@ How should the scoring engine handle genuinely missing data from real farmers (e
 After fixing the scoring bugs, demo projects were approved via /admin to populate the investor dashboard. The UI showed approvals taking effect immediately, and tab counts appeared to update correctly. However, on page refresh, all approvals reverted to pending — the entire approval history was an illusion living only in React local state.
 
 ### Root cause (two compounding bugs)
-1. **Wrong database**: The admin page's updateStatus() function called supabase.from("farmer_applications").update() directly from the frontend. This wrote to the Supabase Auth project's Postgres instance (used for authentication), not the Railway-provisioned Postgres that finnex-api actually reads from. These are two entirely separate databases sharing only the same Supabase Auth provider.
+1. **Wrong database**: The admin page's updateStatus() function called supabase.from("farmer_applications").update() directly from the frontend. This wrote to the Supabase Auth project's Postgres instance (used for authentication), not the separate Supabase Postgres project that finnex-api actually reads from via a direct psycopg2 connection (not the Supabase client). These are two entirely separate Supabase projects/databases — confirmed 2026-07-16 by reading finnex-api's Railway `DATABASE_URL`, which points to `aws-0-eu-west-3.pooler.supabase.com` (Supabase's EU-West/Paris pooler), not a Railway-hosted Postgres instance.
 2. **Silent false success**: Because the Supabase write targeted a table that didn't meaningfully exist in that database, it returned {error: null} with zero rows matched — not a thrown error. The frontend's if (!error) check passed, so local state updated and the UI looked successful even though nothing was persisted.
 3. **Compounding tab-count bug**: Separately, the Pending tab was filtering on p.status === "submitted", a value that never appears in the DB (the actual default is "pending"). This made the Pending count always show 0 regardless of real data, while the Approved count appeared to work correctly — but only because it was reading the same fake local state that had just been set, not the database.
 
@@ -115,12 +115,12 @@ After fixing the scoring bugs, demo projects were approved via /admin to populat
 Every project ever "approved" through /admin before this fix — across all prior sessions — was never actually approved in the database. The investor dashboard's "approved only" view has likely been empty or stale this entire time, even when the admin UI showed projects as approved.
 
 ### Fix
-- finnex-api: added PATCH /api/projects/{id}/status, writing directly to Railway Postgres via the same psycopg2 connection pattern used elsewhere in the API — no Supabase involved.
+- finnex-api: added PATCH /api/projects/{id}/status, writing directly to the Supabase Postgres project finnex-api connects to (via the same psycopg2 connection pattern used elsewhere in the API) — no Supabase client/JS SDK involved, i.e. bypassing Supabase's REST/RLS layer entirely and talking straight to Postgres via its connection pooler.
 - finnex-app: updateStatus() now calls this PATCH endpoint via fetch() instead of any Supabase client method. The Supabase client import remains, used only for sign-out (auth session termination), not data writes.
 - Pending tab filter corrected from "submitted" to "pending" to match the actual DB default.
 
 ### Verification performed
-1. Curled the PATCH endpoint directly against a real project ID, then issued a fresh server-side GET (not relying on browser/local state) to confirm the status change persisted in Railway Postgres.
+1. Curled the PATCH endpoint directly against a real project ID, then issued a fresh server-side GET (not relying on browser/local state) to confirm the status change persisted in the Supabase Postgres database finnex-api connects to.
 2. Performed the real acceptance test in-browser: approved 7 projects via /admin, hard-refreshed the page, confirmed they remained approved.
 3. Confirmed those same 7 projects appeared correctly on /dashboard with correct scores, risk bands, and completeness percentages (100%, 92%, etc.).
 
