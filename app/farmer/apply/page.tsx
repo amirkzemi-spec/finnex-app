@@ -15,6 +15,7 @@ type FormData = {
   // Step 2 — Farm & Financing
   land_area_ha: string;
   experience_years: string;
+  land_ownership_status: string;
   has_offtake_contract: string;
   capital_requested: string;
   capital_need: string;
@@ -22,9 +23,18 @@ type FormData = {
 
 const empty: FormData = {
   project_name: "", phone_number: "", email: "", country: "Kenya", region: "", crop_type: "",
-  land_area_ha: "", experience_years: "", has_offtake_contract: "",
+  land_area_ha: "", experience_years: "", land_ownership_status: "", has_offtake_contract: "",
   capital_requested: "", capital_need: "",
 };
+
+// Self-reported at intake. Step 3 field verification will separately
+// confirm this on the ground later — kept as a distinct field, not merged.
+const LAND_OWNERSHIP_OPTIONS = [
+  { label: "Formal title", value: "formal_title" },
+  { label: "Lease/rental agreement", value: "lease_rental" },
+  { label: "Customary/communal rights", value: "customary_communal" },
+  { label: "Informal/undocumented", value: "informal_undocumented" },
+];
 
 // Value differs from label for "Horticulture" so it matches finnex-api's
 // existing MODERATE_CROPS scorer bucket ("vegetables") instead of falling
@@ -151,6 +161,15 @@ function Step2({ data, set }: { data: FormData; set: (k: keyof FormData, v: stri
           </Select>
         </Field>
         <Field className="md:col-span-2">
+          <Label required>Land ownership status</Label>
+          <Select value={data.land_ownership_status} onChange={e => set("land_ownership_status", e.target.value)}>
+            <option value="">Select</option>
+            {LAND_OWNERSHIP_OPTIONS.map(({ label, value }) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
+          </Select>
+        </Field>
+        <Field className="md:col-span-2">
           <Label required>Do you have an existing offtake contract?</Label>
           <Select value={data.has_offtake_contract} onChange={e => set("has_offtake_contract", e.target.value)}>
             <option value="">Select</option>
@@ -189,6 +208,7 @@ function validate(step: number, data: FormData): string | null {
   if (step === 2) {
     if (!data.land_area_ha) return "Please enter your land area.";
     if (!data.experience_years) return "Please select your years of experience.";
+    if (!data.land_ownership_status) return "Please select your land ownership status.";
     if (!data.has_offtake_contract) return "Please indicate whether you have an offtake contract.";
     if (!data.capital_requested) return "Please enter the capital amount requested.";
     if (!data.capital_need.trim()) return "Please describe what the funding is for.";
@@ -314,6 +334,7 @@ export default function FarmerApplyPage() {
         crop_type: data.crop_type,
         land_area_ha: data.land_area_ha ? parseFloat(data.land_area_ha) : null,
         experience_years: data.experience_years,
+        land_ownership_status: data.land_ownership_status,
         has_offtake_contract: data.has_offtake_contract,
         capital_requested: data.capital_requested ? parseFloat(data.capital_requested) : null,
         capital_need: data.capital_need,
