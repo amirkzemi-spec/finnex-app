@@ -23,6 +23,16 @@ type Project = {
 
 type StatusFilter = "all" | "pending" | "approved" | "rejected";
 
+type AdvisoryInquiry = {
+  id: string;
+  name: string;
+  phone: string | null;
+  email: string | null;
+  country: string | null;
+  topic: string;
+  created_at: string;
+};
+
 function statusBadgeStyle(status: string): { background: string; color: string } {
   if (status === "approved") return { background: "rgba(74,222,128,0.15)", color: "#4ADE80" };
   if (status === "rejected") return { background: "rgba(239,68,68,0.12)", color: "#F87171" };
@@ -53,6 +63,8 @@ export default function AdminPage() {
   const [inviteLoading, setInviteLoading] = useState(false);
   const [inviteMsg, setInviteMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [bannerDismissed, setBannerDismissed] = useState(false);
+  const [advisoryInquiries, setAdvisoryInquiries] = useState<AdvisoryInquiry[]>([]);
+  const [advisoryLoading, setAdvisoryLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
@@ -63,6 +75,19 @@ export default function AdminPage() {
         setProjects(data);
       } finally {
         setLoading(false);
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      setAdvisoryLoading(true);
+      try {
+        const res = await fetch(`${API_BASE}/advisory-inquiries`);
+        const data: AdvisoryInquiry[] = await res.json();
+        setAdvisoryInquiries(data);
+      } finally {
+        setAdvisoryLoading(false);
       }
     })();
   }, []);
@@ -342,6 +367,52 @@ export default function AdminPage() {
         }
         .adm-view:hover { border-color: rgba(184,212,192,0.35); }
 
+        /* ADVISORY INQUIRIES */
+        .adm-advisory-list {
+          padding: 0 40px;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          margin-bottom: 56px;
+        }
+        .adm-advisory-row {
+          background: #0F2D1A;
+          border: 1px solid rgba(184,212,192,0.1);
+          border-radius: 12px;
+          padding: 14px 18px;
+        }
+        .adm-advisory-top {
+          display: flex;
+          justify-content: space-between;
+          align-items: baseline;
+          gap: 12px;
+          flex-wrap: wrap;
+          margin-bottom: 6px;
+        }
+        .adm-advisory-name {
+          font-family: 'Playfair Display', serif;
+          font-weight: 600;
+          color: #E8F4EC;
+          font-size: 0.95rem;
+        }
+        .adm-advisory-date {
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 0.65rem;
+          color: #B8D4C0;
+          opacity: 0.4;
+        }
+        .adm-advisory-meta {
+          font-size: 0.75rem;
+          color: #B8D4C0;
+          opacity: 0.55;
+          margin-bottom: 6px;
+        }
+        .adm-advisory-topic {
+          font-size: 0.85rem;
+          color: #B8D4C0;
+          opacity: 0.85;
+        }
+
         /* EMPTY / LOADING */
         .adm-empty {
           text-align: center;
@@ -487,7 +558,7 @@ export default function AdminPage() {
         .adm-demo-banner-close:hover { opacity: 1; }
 
         @media (max-width: 640px) {
-          .adm-nav, .adm-header, .adm-tabs, .adm-list, .adm-invite-section, .adm-divider, .adm-demo-banner {
+          .adm-nav, .adm-header, .adm-tabs, .adm-list, .adm-invite-section, .adm-divider, .adm-demo-banner, .adm-advisory-list {
             padding-left: 20px;
             padding-right: 20px;
           }
@@ -623,6 +694,31 @@ export default function AdminPage() {
               )}
             </form>
           </div>
+        </div>
+
+        {/* ADVISORY INQUIRIES */}
+        <div className="adm-divider">Advisory <em style={{ fontStyle: "normal", color: "#4ADE80" }}>Inquiries</em></div>
+        <div className="adm-advisory-list">
+          {advisoryLoading ? (
+            <div className="adm-spinner"><div className="adm-spinner-ring" /></div>
+          ) : advisoryInquiries.length === 0 ? (
+            <div className="adm-empty">No advisory inquiries yet</div>
+          ) : (
+            advisoryInquiries.map(inq => (
+              <div key={inq.id} className="adm-advisory-row">
+                <div className="adm-advisory-top">
+                  <span className="adm-advisory-name">{inq.name}</span>
+                  <span className="adm-advisory-date">
+                    {new Date(inq.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                  </span>
+                </div>
+                <div className="adm-advisory-meta">
+                  {[inq.phone, inq.email, inq.country].filter(Boolean).join(" · ") || "No contact details"}
+                </div>
+                <div className="adm-advisory-topic">{inq.topic}</div>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </>
