@@ -3,8 +3,15 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase";
 
 const API_BASE = "https://finnex-api-production.up.railway.app/api";
+
+async function authHeaders(): Promise<Record<string, string>> {
+  const supabase = createClient();
+  const { data: { session } } = await supabase.auth.getSession();
+  return session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {};
+}
 
 type DimensionKey = "agronomy" | "operator" | "market" | "finance" | "monitoring" | "impact";
 
@@ -123,7 +130,7 @@ export default function ReadinessDocPage() {
     (async () => {
       setLoading(true);
       try {
-        const res = await fetch(`${API_BASE}/projects/${id}/readiness`);
+        const res = await fetch(`${API_BASE}/projects/${id}/readiness`, { headers: await authHeaders() });
         if (res.status === 404) {
           setNotFound(true);
           return;
@@ -153,7 +160,7 @@ export default function ReadinessDocPage() {
     try {
       const res = await fetch(`${API_BASE}/projects/${id}/readiness`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...(await authHeaders()) },
         body: JSON.stringify({
           in_kind_breakdown: inKind || null,
           failure_scenario: failureScenario || null,

@@ -53,6 +53,12 @@ function sourceLabel(source: string): string {
   return source === "synthetic" ? "Synthetic" : "Real";
 }
 
+async function authHeaders(): Promise<Record<string, string>> {
+  const supabase = createClient();
+  const { data: { session } } = await supabase.auth.getSession();
+  return session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {};
+}
+
 export default function AdminPage() {
   const router = useRouter();
   const [projects, setProjects] = useState<Project[]>([]);
@@ -70,7 +76,7 @@ export default function AdminPage() {
     (async () => {
       setLoading(true);
       try {
-        const res = await fetch(API);
+        const res = await fetch(API, { headers: await authHeaders() });
         const data: Project[] = await res.json();
         setProjects(data);
       } finally {
@@ -83,7 +89,7 @@ export default function AdminPage() {
     (async () => {
       setAdvisoryLoading(true);
       try {
-        const res = await fetch(`${API_BASE}/advisory-inquiries`);
+        const res = await fetch(`${API_BASE}/advisory-inquiries`, { headers: await authHeaders() });
         const data: AdvisoryInquiry[] = await res.json();
         setAdvisoryInquiries(data);
       } finally {
@@ -103,7 +109,7 @@ export default function AdminPage() {
     try {
       const res = await fetch(`${API_BASE}/projects/${id}/status`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...(await authHeaders()) },
         body: JSON.stringify({ status: newStatus }),
       });
       if (res.ok) {
