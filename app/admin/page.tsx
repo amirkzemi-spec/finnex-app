@@ -568,6 +568,7 @@ export default function AdminPage() {
                   </div>
                   <div className="adm-row-actions">
                     <Link href={`/dashboard/${p.id}`} className="adm-view">View</Link>
+                    <Link href={`/admin/projects/${p.id}/readiness`} className="adm-view">View Readiness Doc</Link>
                     {!isApproved && (
                       <button
                         className="adm-action-btn adm-approve"
