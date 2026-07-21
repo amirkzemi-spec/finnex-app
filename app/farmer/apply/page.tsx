@@ -1,6 +1,15 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
+
+declare global {
+  interface Window {
+    turnstile?: {
+      render: (container: HTMLElement, options: Record<string, unknown>) => string;
+      remove: (widgetId: string) => void;
+    };
+  }
+}
 
 // ── Types ──────────────────────────────────────────────
 type FormData = {
@@ -246,6 +255,47 @@ function ProgressBar({ step }: { step: number }) {
   );
 }
 
+// ── Turnstile widget ───────────────────────────────────
+// Explicit render (not the implicit script-tag form) so the widget survives
+// this component mounting/unmounting as the user moves between steps.
+function TurnstileWidget({ onVerify }: { onVerify: (token: string) => void }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const widgetId = useRef<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    function render() {
+      if (cancelled || !containerRef.current || !window.turnstile) return;
+      widgetId.current = window.turnstile.render(containerRef.current, {
+        sitekey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "",
+        callback: onVerify,
+      });
+    }
+
+    if (window.turnstile) {
+      render();
+    } else {
+      const script = document.createElement("script");
+      script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js";
+      script.async = true;
+      script.defer = true;
+      script.onload = render;
+      document.body.appendChild(script);
+    }
+
+    return () => {
+      cancelled = true;
+      if (widgetId.current && window.turnstile) {
+        window.turnstile.remove(widgetId.current);
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return <div ref={containerRef} className="mt-4" />;
+}
+
 // ── Success screen ─────────────────────────────────────
 function SuccessScreen({ name, email }: { name: string; email: string }) {
   return (
@@ -298,6 +348,10 @@ export default function FarmerApplyPage() {
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  // Honeypot — invisible to real farmers; a bot's autofill will populate it.
+  const [website, setWebsite] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState("");
+
   function set(key: keyof FormData, value: string) {
     setData((prev) => ({ ...prev, [key]: value }));
     setError("");
@@ -320,6 +374,7 @@ export default function FarmerApplyPage() {
   async function submit() {
     const err = validate(2, data);
     if (err) { setError(err); return; }
+    if (!turnstileToken) { setError("Please complete the verification check."); return; }
     setSubmitting(true);
 
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/farmer/apply`, {
@@ -338,6 +393,8 @@ export default function FarmerApplyPage() {
         has_offtake_contract: data.has_offtake_contract,
         capital_requested: data.capital_requested ? parseFloat(data.capital_requested) : null,
         capital_need: data.capital_need,
+        website,
+        turnstile_token: turnstileToken,
       }),
     });
     if (!res.ok) {
@@ -387,8 +444,23 @@ export default function FarmerApplyPage() {
               <>
                 <ProgressBar step={step} />
 
+                {/* Honeypot — visually hidden, never shown to a real farmer */}
+                <div style={{ position: "absolute", left: "-9999px", top: 0 }} aria-hidden="true">
+                  <label htmlFor="website">Website</label>
+                  <input
+                    type="text"
+                    id="website"
+                    name="website"
+                    tabIndex={-1}
+                    autoComplete="off"
+                    value={website}
+                    onChange={(e) => setWebsite(e.target.value)}
+                  />
+                </div>
+
                 {step === 1 && <Step1 data={data} set={set} />}
                 {step === 2 && <Step2 data={data} set={set} />}
+                {step === 2 && <TurnstileWidget onVerify={setTurnstileToken} />}
 
                 {error && (
                   <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-600">
@@ -417,7 +489,7 @@ export default function FarmerApplyPage() {
                   ) : (
                     <button
                       onClick={submit}
-                      disabled={submitting}
+                      disabled={submitting || !turnstileToken}
                       className="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-60 transition"
                     >
                       {submitting ? "Submitting…" : "Submit application"}
