@@ -3,8 +3,15 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase";
 
 const API = "https://finnex-api-production.up.railway.app/api/projects";
+
+async function authHeaders(): Promise<Record<string, string>> {
+  const supabase = createClient();
+  const { data: { session } } = await supabase.auth.getSession();
+  return session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {};
+}
 
 type Project = {
   id: string;
@@ -117,7 +124,7 @@ export default function ProjectDetailPage() {
     (async () => {
       setLoading(true);
       try {
-        const res = await fetch(API);
+        const res = await fetch(API, { headers: await authHeaders() });
         const data: Project[] = await res.json();
         const found = data.find((p) => p.id === id);
         if (found) {

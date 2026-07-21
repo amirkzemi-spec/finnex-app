@@ -2,8 +2,15 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase";
 
 const API = "https://finnex-api-production.up.railway.app/api/projects";
+
+async function authHeaders(): Promise<Record<string, string>> {
+  const supabase = createClient();
+  const { data: { session } } = await supabase.auth.getSession();
+  return session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {};
+}
 
 type Project = {
   id: string;
@@ -114,23 +121,30 @@ export default function DashboardPage() {
     if (r)  params.set("risk_band", r);
     if (ct) params.set("crop_type", ct);
     const url = `${API}?${params}`;
-    const res  = await fetch(url);
-    const data: Project[] = await res.json();
-    setProjects(data);
-    setLoading(false);
+    try {
+      const res  = await fetch(url, { headers: await authHeaders() });
+      const data: Project[] = await res.json();
+      setProjects(Array.isArray(data) ? data : []);
+    } finally {
+      setLoading(false);
+    }
   };
 
   /* initial load — also build filter option lists from full dataset */
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const res  = await fetch(`${API}?status=approved`);
-      const data: Project[] = await res.json();
-      setProjects(data);
-      setCountries([...new Set(data.map(p => p.country).filter(Boolean) as string[])].sort());
-      setRiskBands([...new Set(data.map(p => p.risk_band).filter(Boolean))].sort());
-      setCropTypes([...new Set(data.map(p => p.crop_type).filter(Boolean) as string[])].sort());
-      setLoading(false);
+      try {
+        const res  = await fetch(`${API}?status=approved`, { headers: await authHeaders() });
+        const data: Project[] = await res.json();
+        const list = Array.isArray(data) ? data : [];
+        setProjects(list);
+        setCountries([...new Set(list.map(p => p.country).filter(Boolean) as string[])].sort());
+        setRiskBands([...new Set(list.map(p => p.risk_band).filter(Boolean))].sort());
+        setCropTypes([...new Set(list.map(p => p.crop_type).filter(Boolean) as string[])].sort());
+      } finally {
+        setLoading(false);
+      }
     })();
   }, []);
 
