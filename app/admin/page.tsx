@@ -22,6 +22,11 @@ type Project = {
 };
 
 type StatusFilter = "all" | "pending" | "approved" | "rejected";
+type SortOption = "newest" | "score";
+
+function formatSubmittedDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
 
 type AdvisoryInquiry = {
   id: string;
@@ -64,6 +69,7 @@ export default function AdminPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<StatusFilter>("all");
+  const [sort, setSort] = useState<SortOption>("newest");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteLoading, setInviteLoading] = useState(false);
@@ -146,10 +152,15 @@ export default function AdminPage() {
     }
   };
 
-  const visible = projects.filter(p => {
-    if (filter === "all") return true;
-    return p.status === filter;
-  });
+  const visible = projects
+    .filter(p => {
+      if (filter === "all") return true;
+      return p.status === filter;
+    })
+    .sort((a, b) => {
+      if (sort === "score") return (b.overall_score ?? 0) - (a.overall_score ?? 0);
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
 
   const counts = {
     all:      projects.length,
@@ -239,12 +250,32 @@ export default function AdminPage() {
         }
 
         /* FILTER TABS */
-        .adm-tabs {
+        .adm-tabs-row {
           display: flex;
-          gap: 8px;
+          justify-content: space-between;
+          align-items: center;
+          gap: 12px;
           padding: 0 40px;
           margin-bottom: 24px;
           flex-wrap: wrap;
+        }
+        .adm-tabs {
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+        .adm-sort {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .adm-sort-label {
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 0.65rem;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          color: #B8D4C0;
+          opacity: 0.4;
         }
         .adm-tab {
           background: none;
@@ -322,6 +353,9 @@ export default function AdminPage() {
           text-transform: uppercase;
           padding: 3px 8px;
           border-radius: 5px;
+        }
+        .adm-row-date {
+          font-family: 'JetBrains Mono', monospace;
         }
 
         .adm-row-actions {
@@ -564,7 +598,7 @@ export default function AdminPage() {
         .adm-demo-banner-close:hover { opacity: 1; }
 
         @media (max-width: 640px) {
-          .adm-nav, .adm-header, .adm-tabs, .adm-list, .adm-invite-section, .adm-divider, .adm-demo-banner, .adm-advisory-list {
+          .adm-nav, .adm-header, .adm-tabs-row, .adm-list, .adm-invite-section, .adm-divider, .adm-demo-banner, .adm-advisory-list {
             padding-left: 20px;
             padding-right: 20px;
           }
@@ -599,17 +633,31 @@ export default function AdminPage() {
         </div>
 
         {/* FILTER TABS */}
-        <div className="adm-tabs">
-          {(["all", "pending", "approved", "rejected"] as StatusFilter[]).map(f => (
-            <button
-              key={f}
-              className={`adm-tab${filter === f ? " active" : ""}`}
-              onClick={() => setFilter(f)}
-            >
-              {f === "pending" ? "Pending" : f.charAt(0).toUpperCase() + f.slice(1)}
-              <span className="adm-tab-count">{counts[f]}</span>
-            </button>
-          ))}
+        <div className="adm-tabs-row">
+          <div className="adm-tabs">
+            {(["all", "pending", "approved", "rejected"] as StatusFilter[]).map(f => (
+              <button
+                key={f}
+                className={`adm-tab${filter === f ? " active" : ""}`}
+                onClick={() => setFilter(f)}
+              >
+                {f === "pending" ? "Pending" : f.charAt(0).toUpperCase() + f.slice(1)}
+                <span className="adm-tab-count">{counts[f]}</span>
+              </button>
+            ))}
+          </div>
+          <div className="adm-sort">
+            <span className="adm-sort-label">Sort</span>
+            {(["newest", "score"] as SortOption[]).map(s => (
+              <button
+                key={s}
+                className={`adm-tab${sort === s ? " active" : ""}`}
+                onClick={() => setSort(s)}
+              >
+                {s === "newest" ? "Newest" : "Score"}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* PROJECT LIST */}
@@ -630,6 +678,9 @@ export default function AdminPage() {
                     <div className="adm-row-name">{name}</div>
                     <div className="adm-row-meta">
                       {[p.country, p.crop_type].filter(Boolean).join(" · ")}
+                      {p.created_at && (
+                        <span className="adm-row-date">{formatSubmittedDate(p.created_at)}</span>
+                      )}
                       {p.overall_score != null && (
                         <span style={{ fontFamily: "'JetBrains Mono', monospace", color: "#4ADE80" }}>
                           {p.overall_score.toFixed(1)}
