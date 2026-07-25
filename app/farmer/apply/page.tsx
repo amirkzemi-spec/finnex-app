@@ -27,13 +27,14 @@ type FormData = {
   land_ownership_status: string;
   has_offtake_contract: string;
   capital_requested: string;
+  currency: string;
   capital_need: string;
 };
 
 const empty: FormData = {
   project_name: "", phone_number: "", email: "", country: "Kenya", region: "", crop_type: "",
   land_area_ha: "", experience_years: "", land_ownership_status: "", has_offtake_contract: "",
-  capital_requested: "", capital_need: "",
+  capital_requested: "", currency: "EUR", capital_need: "",
 };
 
 // Self-reported at intake. Step 3 field verification will separately
@@ -49,6 +50,7 @@ const LAND_OWNERSHIP_OPTIONS = [
 // existing MODERATE_CROPS scorer bucket ("vegetables") instead of falling
 // into the generic unrecognised-crop fallback.
 const CROP_OPTIONS = [
+  { label: "Maize", value: "maize" },
   { label: "Tea", value: "tea" },
   { label: "Coffee", value: "coffee" },
   { label: "Dairy", value: "dairy" },
@@ -187,8 +189,18 @@ function Step2({ data, set }: { data: FormData; set: (k: keyof FormData, v: stri
           </Select>
         </Field>
         <Field className="md:col-span-2">
-          <Label required>Capital requested (USD)</Label>
-          <Input type="number" min="0" placeholder="e.g. 50000" value={data.capital_requested} onChange={e => set("capital_requested", e.target.value)} />
+          <Label required>Capital requested</Label>
+          <div className="flex gap-2">
+            <div className="w-28 flex-shrink-0">
+              <Select value={data.currency} onChange={e => set("currency", e.target.value)}>
+                <option value="EUR">EUR</option>
+                <option value="USD">USD</option>
+              </Select>
+            </div>
+            <div className="flex-1">
+              <Input type="number" min="0" placeholder="e.g. 50000" value={data.capital_requested} onChange={e => set("capital_requested", e.target.value)} />
+            </div>
+          </div>
         </Field>
         <Field className="md:col-span-2">
           <Label required>What do you need the funding for?</Label>
@@ -392,6 +404,7 @@ export default function FarmerApplyPage() {
         land_ownership_status: data.land_ownership_status,
         has_offtake_contract: data.has_offtake_contract,
         capital_requested: data.capital_requested ? parseFloat(data.capital_requested) : null,
+        currency: data.currency,
         capital_need: data.capital_need,
         website,
         turnstile_token: turnstileToken,
